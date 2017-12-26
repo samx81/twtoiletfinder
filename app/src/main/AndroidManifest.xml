@@ -38,13 +38,13 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".MapsActivity"
-            android:label="@string/title_activity_maps" />
-        <activity
             android:name=".DataInfo"
             android:label="資料"
-            android:parentActivityName="tw.tolietfinder.sam.MainActivity"
-            ></activity>
+            android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".AddItem"
+            android:label="@string/title_activity_add_item"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"></activity>
     </application>
 
 </manifest>
