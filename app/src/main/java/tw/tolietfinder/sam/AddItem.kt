@@ -16,15 +16,7 @@ class AddItem : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         fab.setOnClickListener {
-            database.use{
-                insert("Toliet",
-                        "name" to itemname.text.toString(),
-                        "address" to itemnaddr.text.toString(),
-                        "type" to itemtype.text.toString(),
-                        "location" to itemlocation.text.toString(),
-                        "lat" to itemlat.text.toString(),
-                        "leg" to legname.text.toString())
-            }
+            
         }
     }
 
