@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.support.design.widget.Snackbar
 import android.support.design.widget.NavigationView
+import android.support.v4.app.ActivityCompat
 import android.support.v4.view.GravityCompat
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AppCompatActivity
@@ -17,7 +18,10 @@ import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import android.support.v4.content.ContextCompat
+import android.view.LayoutInflater
+import android.view.View
 import android.widget.Toast
+import com.facebook.stetho.Stetho
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.*
@@ -25,6 +29,10 @@ import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.tasks.OnSuccessListener
+
+
+
+val MY_PERMISSIONS_REQUEST_LOCATION=99
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
 
@@ -34,6 +42,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+        Stetho.initializeWithDefaults(this);
 
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
@@ -46,19 +55,37 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         nav_view.setNavigationItemSelectedListener(this)
     }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray){
+        if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {
+
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED){
+
+            } else {
+                Toast.makeText(this, " 需要定位功能 ", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private lateinit var mMap: GoogleMap
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.setPadding(0,this.resources.getDimensionPixelSize(R.dimen.abc_action_bar_default_height_material),0,0)
+
+        mMap.setInfoWindowAdapter(CustomInfoWindowAda(this))
+
         if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mMap.isMyLocationEnabled = true
         }
+        else {
+            ActivityCompat.requestPermissions(this,arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),MY_PERMISSIONS_REQUEST_LOCATION)
+        }
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         mFusedLocationClient.lastLocation.addOnSuccessListener(this, OnSuccessListener<Location>{location ->
             Snackbar.make(findViewById(android.R.id.content),
-                    LatLng(location.latitude,location.longitude).toString(),
+                    "Currrent Location:"+LatLng(location.latitude,location.longitude).toString(),
                     Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show()
 
@@ -72,10 +99,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val fju : Marker = mMap.addMarker(
                 MarkerOptions().position(LatLng(25.0354303,121.4324641)).title("FJU University")
         )
+        val db = MyDBHelper(this)
+        var tolietList = db.getAllStudentData()
+        for (toliet in tolietList){
+            mMap.addMarker(MarkerOptions().position(
+                    LatLng(toliet.Latitude.toDouble(),toliet.Longitude.toDouble())
+                            ).title(toliet.Name).snippet(toliet.id.toString()))
+        }
         mMap.moveCamera(CameraUpdateFactory.newLatLng(fju.position))
         mMap.animateCamera(CameraUpdateFactory.zoomTo(15f))
-        val sydney = LatLng(-34.0, 151.0)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
+
     }
     override fun onBackPressed() {
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
@@ -125,4 +158,5 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
     }
+
 }

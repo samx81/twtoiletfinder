@@ -6,7 +6,7 @@ import android.support.v7.app.AppCompatActivity
 
 import kotlinx.android.synthetic.main.activity_add_item.*
 import kotlinx.android.synthetic.main.content_add_item.*
-import org.jetbrains.anko.db.*
+
 
 class AddItem : AppCompatActivity() {
 
@@ -16,7 +16,7 @@ class AddItem : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         fab.setOnClickListener {
-            
+
         }
     }
 
