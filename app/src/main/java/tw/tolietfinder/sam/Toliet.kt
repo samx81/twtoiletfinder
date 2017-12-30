@@ -19,7 +19,7 @@ class Toliet(val id:Int,var Name:String,val Latitude :Double,val Longitude :Doub
             "森林遊樂區","公營事業機構設置供民眾使用者及其他","各級社教機關",
             "公家機關設置供民眾使用者","各級機關學校商","民眾團體活動場所" -> R.drawable.public_icon
 
-            "百貨公司","加油站","超","市場","量販店","旅館" -> R.drawable.private_icon
+            "百貨公司","加油站","超商","市場","量販店","旅館" -> R.drawable.private_icon
             "醫院" -> R.drawable.hospital_icon
             "娛樂場所","戲院" -> R.drawable.play_icon
             "餐廳" -> R.drawable.restaurant_icon

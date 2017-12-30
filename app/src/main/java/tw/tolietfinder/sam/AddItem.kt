@@ -15,8 +15,11 @@ class AddItem : AppCompatActivity() {
         setContentView(R.layout.activity_add_item)
         setSupportActionBar(toolbar)
 
+        var db = MyDBHelper(this)
         fab.setOnClickListener {
-
+            db.insertStudentData(itemname.text.toString(),itemnaddr.text.toString(),
+                    itemtype.text.toString(), itemlocation.text.toString(),
+                    itemlat.text.toString(),legname.text.toString())
         }
     }
 

@@ -34,7 +34,8 @@ import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.tasks.OnSuccessListener
-
+import com.google.maps.android.clustering.ClusterManager
+import junit.framework.Test
 
 
 val MY_PERMISSIONS_REQUEST_LOCATION=99
@@ -72,7 +73,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private lateinit var mMap: GoogleMap
-
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.setPadding(0,this.resources.getDimensionPixelSize(R.dimen.abc_action_bar_default_height_material),0,0)
@@ -86,6 +86,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         else {
             ActivityCompat.requestPermissions(this,arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),MY_PERMISSIONS_REQUEST_LOCATION)
         }
+
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         mFusedLocationClient.lastLocation.addOnSuccessListener(this, OnSuccessListener<Location>{location ->
             Snackbar.make(findViewById(android.R.id.content),
@@ -105,8 +106,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         )
         val db = MyDBHelper(this)
         var tolietList = db.getAllStudentData()
+
         for (toliet in tolietList){
-            var iconbitmap =getMarkerIconFromDrawable(toliet.getIcon())
+            var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon())
             var tMarkerOptions =MarkerOptions()
                     .position(
                             LatLng(toliet.Latitude,toliet.Longitude)

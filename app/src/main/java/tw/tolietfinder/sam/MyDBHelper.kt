@@ -37,11 +37,15 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
     }
 
-    fun insertStudentData(name: String, age: Int): Long {
+    fun insertStudentData(name: String, address: String, attr: String,grade: String,lat: String,lng: String): Long {
         val values = ContentValues()
-        values.put(NAME, name)
-        values.put(AGE, age)
-        return getWritableDatabase().insert(TABLE_STUDENT, null, values)
+        values.put("Name", name)
+        values.put("Address", address)
+        values.put("Type2", attr)
+        values.put("Grade", grade)
+        values.put("Latitude", lat)
+        values.put("Longitude", lng)
+        return getWritableDatabase().insert("toliet", null, values)
     }
 
     fun getAllStudentData(): MutableList<Toliet> {
@@ -66,7 +70,7 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
                                 cursor.getDouble(cursor.getColumnIndex("Latitude")) ,
                                 cursor.getDouble(cursor.getColumnIndex("Longitude")),
                                 cursor.getString(cursor.getColumnIndex("Grade")),
-                                cursor.getString(cursor.getColumnIndex("Type")),
+                                cursor.getString(cursor.getColumnIndex("Type2")),
                                attr,
                                 cursor.getString(cursor.getColumnIndex("Address"))
                         ))
