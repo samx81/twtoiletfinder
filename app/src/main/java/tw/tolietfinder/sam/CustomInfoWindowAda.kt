@@ -24,8 +24,8 @@ class CustomInfoWindowAda (context: Context) : GoogleMap.InfoWindowAdapter{
 
     override fun getInfoWindow(marker: Marker): View? {
 
-        render(marker, mWindow)
-        return mWindow
+            render(marker, mWindow)
+            return mWindow
     }
 
     override fun getInfoContents(marker: Marker): View? {
@@ -35,6 +35,7 @@ class CustomInfoWindowAda (context: Context) : GoogleMap.InfoWindowAdapter{
     }
 
     private fun render(marker: Marker, view: View) {
+        /*
         val tolietId = marker.snippet.toInt()
 
         val title = marker.title
@@ -47,6 +48,21 @@ class CustomInfoWindowAda (context: Context) : GoogleMap.InfoWindowAdapter{
         view.infoaddress.text = selectedToliet.Address
         view.grade.text=selectedToliet.Grade
         view.type.text=selectedToliet.Type
+        */
+        val title = marker.title
+        if (title != null) {
+            view.tName.text = title
+        } else {
+            view.tName.text = ""
+        }
+
+        val selectedToliet : Toliet
+        if (marker.tag !=null) {
+            selectedToliet = marker.tag as Toliet
+            view.infoaddress.text = selectedToliet.Address
+            view.grade.text=selectedToliet.Grade
+            view.type.text=selectedToliet.Type
+        }
 
     }
 }

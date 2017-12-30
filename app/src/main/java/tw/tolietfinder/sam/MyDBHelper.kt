@@ -53,10 +53,23 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
                 cursor.moveToFirst()
                 if (cursor.count > 0) {
                     do {
+                        val rowId=cursor.getColumnIndex("rowid")
+                        var modName=cursor.getString(cursor.getColumnIndex("Name"))
+                        if (modName.indexOf("-")!=-1) modName = modName.split("-")[0]
+                        stuList.add(Toliet(
+                                cursor.getInt(rowId), modName ,
+                                cursor.getDouble(cursor.getColumnIndex("Latitude")) ,
+                                cursor.getDouble(cursor.getColumnIndex("Longitude")),
+                                cursor.getString(cursor.getColumnIndex("Grade")),
+                                cursor.getString(cursor.getColumnIndex("Type")),
+                                cursor.getString(cursor.getColumnIndex("Type2")),
+                                cursor.getString(cursor.getColumnIndex("Address"))
+                        ))
+                        /*
                         stuList.add(Toliet(cursor.getInt(cursor.getColumnIndex("rowid")),cursor.getString(cursor.getColumnIndex("Name")) , cursor.getString(cursor.getColumnIndex("Latitude")) ,
                                 cursor.getString(cursor.getColumnIndex("Longitude")),cursor.getString(cursor.getColumnIndex("Grade")),cursor.getString(cursor.getColumnIndex("Type"))
                                 ,cursor.getString(cursor.getColumnIndex("Type2")),cursor.getString(cursor.getColumnIndex("Address"))
-                        ))
+                        ))*/
                     } while ((cursor.moveToNext()))
                 }
             }
@@ -86,10 +99,17 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
                             else -> 0
                         }*/
                         val rowId=cursor.getColumnIndex("rowid")
-                        val namecol=cursor.getColumnIndex("Name");
-                        particluarToliet = Toliet(cursor.getInt(rowId),cursor.getString(namecol) , cursor.getString(cursor.getColumnIndex("Latitude")) ,
-                                cursor.getString(cursor.getColumnIndex("Longitude")),cursor.getString(cursor.getColumnIndex("Grade")),cursor.getString(cursor.getColumnIndex("Type"))
-                                ,cursor.getString(cursor.getColumnIndex("Type2")),cursor.getString(cursor.getColumnIndex("Address")))
+                        var modName=cursor.getString(cursor.getColumnIndex("Name"))
+                        if (modName.indexOf("-")!=-1) modName = modName.split("-")[0]
+                        particluarToliet = Toliet(
+                                cursor.getInt(rowId), modName ,
+                                cursor.getDouble(cursor.getColumnIndex("Latitude")) ,
+                                cursor.getDouble(cursor.getColumnIndex("Longitude")),
+                                cursor.getString(cursor.getColumnIndex("Grade")),
+                                cursor.getString(cursor.getColumnIndex("Type")),
+                                cursor.getString(cursor.getColumnIndex("Type2")),
+                                cursor.getString(cursor.getColumnIndex("Address"))
+                        )
                     } while ((cursor.moveToNext()));
                 }
             }

@@ -5,6 +5,11 @@ import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
+
 import android.location.Location
 import android.support.design.widget.Snackbar
 import android.support.design.widget.NavigationView
@@ -37,7 +42,6 @@ val MY_PERMISSIONS_REQUEST_LOCATION=99
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
 
     private lateinit var mFusedLocationClient : FusedLocationProviderClient
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -102,9 +106,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val db = MyDBHelper(this)
         var tolietList = db.getAllStudentData()
         for (toliet in tolietList){
-            mMap.addMarker(MarkerOptions().position(
-                    LatLng(toliet.Latitude.toDouble(),toliet.Longitude.toDouble())
-                            ).title(toliet.Name).snippet(toliet.id.toString()))
+            var iconbitmap =getMarkerIconFromDrawable(toliet.getIcon())
+            var tMarkerOptions =MarkerOptions()
+                    .position(
+                            LatLng(toliet.Latitude,toliet.Longitude)
+                    )
+                    .title(toliet.Name).snippet(toliet.id.toString())
+                    .icon(iconbitmap)
+            if (iconbitmap != null) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
+            mMap.addMarker(tMarkerOptions
+            ).setTag(toliet)
         }
         mMap.moveCamera(CameraUpdateFactory.newLatLng(fju.position))
         mMap.animateCamera(CameraUpdateFactory.zoomTo(15f))
@@ -158,5 +169,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
     }
-
+    fun getMarkerIconFromDrawable(id :Int) : BitmapDescriptor? {
+        if (id==-1) return null
+        lateinit var drawable :Drawable
+        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP){
+            drawable = resources.getDrawable(id,theme)
+        } else {
+            drawable  = resources.getDrawable(id)
+        }
+        var bitmap = Bitmap.createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight, Bitmap.Config.ARGB_8888);
+        var canvas = Canvas()
+        canvas.setBitmap(bitmap)
+        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        drawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
 }
+
