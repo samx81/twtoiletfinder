@@ -61,7 +61,7 @@ class CustomInfoWindowAda (context: Context) : GoogleMap.InfoWindowAdapter{
             selectedToliet = marker.tag as Toliet
             view.infoaddress.text = selectedToliet.Address
             view.grade.text=selectedToliet.Grade
-            view.type.text=selectedToliet.Type
+            view.type.text=selectedToliet.Attr
         }
 
     }

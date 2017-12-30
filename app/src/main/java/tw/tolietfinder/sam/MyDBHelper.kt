@@ -54,15 +54,20 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
                 if (cursor.count > 0) {
                     do {
                         val rowId=cursor.getColumnIndex("rowid")
+
                         var modName=cursor.getString(cursor.getColumnIndex("Name"))
                         if (modName.indexOf("-")!=-1) modName = modName.split("-")[0]
+
+                        var attr = cursor.getString(cursor.getColumnIndex("Type2"))
+                        if (attr.equals("超市")) attr = "超商"
+
                         stuList.add(Toliet(
                                 cursor.getInt(rowId), modName ,
                                 cursor.getDouble(cursor.getColumnIndex("Latitude")) ,
                                 cursor.getDouble(cursor.getColumnIndex("Longitude")),
                                 cursor.getString(cursor.getColumnIndex("Grade")),
                                 cursor.getString(cursor.getColumnIndex("Type")),
-                                cursor.getString(cursor.getColumnIndex("Type2")),
+                               attr,
                                 cursor.getString(cursor.getColumnIndex("Address"))
                         ))
                         /*
