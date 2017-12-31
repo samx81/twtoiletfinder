@@ -6,6 +6,8 @@ import android.graphics.drawable.Drawable
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import android.support.v7.app.AppCompatActivity
+import com.google.android.gms.maps.model.LatLng
+
 /**
  * Created by sam on 2017/12/28.
  */
@@ -28,6 +30,9 @@ class Toliet(val id:Int,var Name:String,val Latitude :Double,val Longitude :Doub
         }
 
         return assast
+    }
+    fun getLatLng():LatLng{
+        return LatLng(Latitude,Longitude)
     }
     /*
          var _Grade= Grade
