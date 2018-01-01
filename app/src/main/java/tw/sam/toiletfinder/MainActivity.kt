@@ -22,7 +22,6 @@ import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import android.support.v4.content.ContextCompat
-import android.view.View
 
 import android.widget.Toast
 import com.facebook.stetho.Stetho
@@ -59,20 +58,21 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(infotoolbar)
-        Stetho.initializeWithDefaults(this)
+        setSupportActionBar(infotoolbar) // 工具列的佈署
+        Stetho.initializeWithDefaults(this) // FB 的 debug 工具佈署
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)// 檢查權限，如果沒有的話就要求
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), MY_PERMISSIONS_REQUEST_LOCATION)
         }
         else{
-            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this) //取得座標的模組
             mSettingsClient = LocationServices.getSettingsClient(this)
 
         }
-        geocoder = Geocoder(this, Locale.getDefault())
+        geocoder = Geocoder(this, Locale.getDefault()) //取得地理位置的模組
 
+        // 抽屜最近的廁所那一欄的點擊偵測
         nav_view.getHeaderView(0).toiletnav.setOnClickListener {
             if(nearestToiletdis!=-1){
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(nearestToilet.getLatLng(),20f))
@@ -80,27 +80,29 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
-
+        // 地圖佈署
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        //抽屜佈署
         val toggle = ActionBarDrawerToggle(
                 this, drawer_layout, infotoolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
         drawer_layout.addDrawerListener(toggle)
         toggle.syncState()
-
+        //抽屜項目點擊偵測
         nav_view.setNavigationItemSelectedListener(this)
-
+        //取得廁所資料 from 資料庫
         toiletList = MyDBHelper(this).getAllStudentData()
 
+        //下面這邊很麻煩懶的寫
         createLocationCallback()
         createLocationRequest()
         buildLocationSettingsRequest()
         startLocationUpdates()
 
     }
-
+    // 權限授權後的檢查
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray){
         if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {
 
@@ -111,7 +113,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
     }
-/*
+
+/* 這邊就留著
     override protected fun onActivityResult(requestCode:Int resultCode:Int, data: Intent) {
         when (requestCode) {
             // Check for the integer request code originally supplied to startResolutionForResult().
@@ -130,26 +133,32 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     */
 
     private var mLocationRequest = LocationRequest()
+
+    // 多久檢查一次位置的設定
     fun createLocationRequest() {
         mLocationRequest.interval = 100000
         mLocationRequest.fastestInterval =50000
         mLocationRequest.priority= LocationRequest.PRIORITY_HIGH_ACCURACY
     }
+
+    //建立檢查位置的設定
     private fun buildLocationSettingsRequest() {
         var builder = LocationSettingsRequest.Builder()
         builder.addLocationRequest(mLocationRequest)
         mLocationSettingsRequest = builder.build()
     }
+
+    //主要在檢查完位置後要做的事情
     private fun createLocationCallback() {
         mLocationCallback = object:LocationCallback() {
              override fun onLocationResult(locationResult:LocationResult) {
-                super.onLocationResult(locationResult)
-                mCurrentLocation = LatLng(locationResult.getLastLocation().latitude,locationResult.getLastLocation().longitude)
-                 Snackbar.make(findViewById(android.R.id.content),
-                         "Currrent Location:"+mCurrentLocation.toString(),
-                         Snackbar.LENGTH_LONG)
-                         .setAction("Action", null).show()
+                 super.onLocationResult(locationResult)
 
+                 mCurrentLocation = LatLng(locationResult.getLastLocation().latitude,locationResult.getLastLocation().longitude)
+
+                 snackbarshow("Currrent Location:"+mCurrentLocation.toString())
+
+                 //搜尋最近的廁所，要拿去放在抽屜裡面用的
                  for (toliet in toiletList){
                      var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
                      else 9999
@@ -158,43 +167,41 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                          nearestToilet = toliet
                      }
                  }
+
+                 //找到目前位置後移動地圖的鏡頭
                  mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLocation,15f))
+
+                 //更新抽屜訊息
                  updateNav()
+
+                 //取得地理位置
                  var previousCity = currentCity
                  try {
                      var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
                      if(!getLocation.isEmpty()){
-                         /*
-                         currentCity=if (getLocation[0].adminArea.equals("台北市")) "臺北市"
-                            else getLocation[0].adminArea*/
                          currentCity=getLocation[0].locality
                      }
                      snackbarshow(currentCity)
                  } catch (e:IOException) {
                      e.printStackTrace()
                  }
+
+                 //如果後台沒在下載，地理位置也沒變，不下載新資料
                  if(!downloading && previousCity!=currentCity) getDataFromDB(currentCity)
-
-
             }
         }
     }
 
     private fun startLocationUpdates() {
-        // Begin by checking if the device has the necessary location settings.
+        // 持續更新位置的背景處理函式
         mSettingsClient.checkLocationSettings(mLocationSettingsRequest)
                 .addOnSuccessListener(this, {locationSettingsResponse->
-                        //Log.i(TAG, "All location settings are satisfied.");
 
-                        //noinspection MissingPermission
                     if(ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)
                             == PackageManager.PERMISSION_GRANTED){
                         mFusedLocationClient.requestLocationUpdates(mLocationRequest,
                                 mLocationCallback, Looper.myLooper())
-
                     }
-
-
                 })/*
                 .addOnFailureListener(this, {e ->
                         var statusCode = e as ApiException.getStatusCode()
@@ -228,19 +235,23 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var mMap: GoogleMap
     private var nearestToiletdis:Int = -1
 
-
+    //地圖主要的操作函式
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        mMap.setPadding(0,this.resources.getDimensionPixelSize(R.dimen.abc_action_bar_default_height_material),0,0)
+        mMap.setPadding(0,this.resources.getDimensionPixelSize(R.dimen.abc_action_bar_default_height_material),0,0) //工具欄會擋住地圖
 
+        //自訂資訊視窗，然後增加點擊偵測
         mMap.setInfoWindowAdapter(CustomInfoWindowAda(this))
         mMap.setOnInfoWindowClickListener(this)
 
+        //檢查權限，如果可以就開目前地點，更新目前地點
         if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
-            mMap.isMyLocationEnabled = true
-            mFusedLocationClient.lastLocation.addOnCompleteListener(this, {task ->
 
+            mMap.isMyLocationEnabled = true
+
+            //目前地點檢查
+            mFusedLocationClient.lastLocation.addOnCompleteListener(this, {task ->
                 if(task.isSuccessful && task.getResult() != null) {
                     mCurrentLocation = LatLng(task.getResult().latitude,task.getResult().longitude)
 
@@ -258,40 +269,38 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
 
-        // Add a marker in Sydney and move the camera
+        //輔大的Marker，測試用
         val fju : Marker = mMap.addMarker(
                 MarkerOptions().position(LatLng(25.0354303,121.4324641)).title("FJU University")
         )
 
+        //從本地資料庫撈資料放在地圖上
         for (toliet in toiletList){
-            var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon())
-            var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
-            else 9999
+            var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon()) //生圖示
             var tMarkerOptions =MarkerOptions()
                     .position(toliet.getLatLng())
                     .title(toliet.Name)
                     .icon(iconbitmap)
+            //調整錨點
             if (iconbitmap != null) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
+
+            //放進地圖且加上物件（可能是這邊會造成地圖記憶體過量，但這樣比較方便
             mMap.addMarker(tMarkerOptions).setTag(toliet)
-            /*if (nearestToiletdis == -1 || nearestToiletdis > distance){
-                nearestToiletdis = distance
-                nearestToilet = toliet
-            }*/
         }
         mMap.moveCamera(CameraUpdateFactory.newLatLng(LatLng(25.047940, 121.513713)))
-
         mMap.animateCamera(CameraUpdateFactory.zoomTo(15f))
 
     }
+
     private fun updateNav(){
-            var navView = nav_view.getHeaderView(0)
+            var navView = nav_view.getHeaderView(0) //撈出layout
             if(this::nearestToilet.isInitialized){
-                nearestToiletdis =computeDistanceBetween(mCurrentLocation, nearestToilet.getLatLng()).toInt()
-                navView.nearestFromHere.text= """${nearestToilet.Name}
-                    |最近距離為：$nearestToiletdis 公尺""".trimMargin()
+                nearestToiletdis =computeDistanceBetween(mCurrentLocation, nearestToilet.getLatLng()).toInt() //算最近距離
+                navView.nearestFromHere.text= "${nearestToilet.Name}\n最近距離為：$nearestToiletdis 公尺"
                 navView.nearestTolietIcon.setImageResource(nearestToilet.getIcon())
             }
     }
+
     override fun onBackPressed() {
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
             drawer_layout.closeDrawer(GravityCompat.START)
@@ -316,6 +325,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
+    //抽屜項目選擇後的動作
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.
         when (item.itemId) {
@@ -340,6 +350,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return true
     }
 
+    //生圖示用的函式
     fun getMarkerIconFromDrawable(id :Int) : BitmapDescriptor? {
         if (id==-1) return null
         lateinit var drawable :Drawable
@@ -356,16 +367,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return BitmapDescriptorFactory.fromBitmap(bitmap)
     }
 
+    //資訊視窗點擊後的動作
     override fun onInfoWindowClick(p0: Marker?) {
-        var toiletInfo = Intent(this,DataInfo::class.java)
+        var toiletInfo = Intent(this,DataInfo::class.java) //做包裹
         if(p0 != null) {
             toiletInfo.putExtra("toilet",p0.tag as Toilet)
             toiletInfo.putExtra("Name",p0.title)
         }
         Log.d("Mytag",  p0?.tag.toString());
-        startActivity(toiletInfo)
+        startActivity(toiletInfo) //送進詳細資訊欄
     }
 
+    //下方小黑條的函式
     fun snackbarshow(str:String){
         Snackbar.make(findViewById(android.R.id.content), str,
                 Snackbar.LENGTH_LONG)
@@ -373,10 +386,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
     private var downloading= false
 
+    //資料庫取得函式
     fun getDataFromDB(city:String){
         var request = Request.Builder().
                 url("http://1c78066d.ngrok.io/pdo/select_city.php?city=$currentCity").build()
         var db=MyDBHelper(this)
+
         downloading=true
         httpClient.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call?, e: IOException?) {
@@ -395,7 +410,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     val country = item.get("country").toString()
                     val city = item.get("city").toString()
                     val address = item.get("address").toString()
-
+                    //6
                     val admin = item.get("administration").toString()
                     val latitude = item.get("latitude").toString()
                     val longitude = item.get("longitude").toString()
