@@ -1,4 +1,4 @@
-package tw.tolietfinder.sam
+package tw.sam.toiletfinder
 
 import org.junit.Test
 

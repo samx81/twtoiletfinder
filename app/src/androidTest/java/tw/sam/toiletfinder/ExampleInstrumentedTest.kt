@@ -1,4 +1,4 @@
-package tw.tolietfinder.sam
+package tw.sam.toiletfinder
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4

@@ -7,7 +7,7 @@ apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion 26
     defaultConfig {
-        applicationId "tw.tolietfinder.sam"
+        applicationId "tw.sam.toiletfinder"
         minSdkVersion 15
         targetSdkVersion 26
         versionCode 1
@@ -36,4 +36,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     compile 'com.facebook.stetho:stetho:1.5.0'
     compile 'com.google.maps.android:android-maps-utils:0.5+'
+    compile 'com.squareup.okhttp3:okhttp:3.9.1'
 }

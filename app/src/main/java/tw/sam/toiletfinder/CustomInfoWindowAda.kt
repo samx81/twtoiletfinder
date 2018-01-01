@@ -1,14 +1,10 @@
-package tw.tolietfinder.sam
+package tw.sam.toiletfinder
 
 import android.content.Context
-import android.text.Layout
 import android.view.LayoutInflater
 import android.view.View
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.Marker
-import android.text.style.ForegroundColorSpan
-import android.text.SpannableString
-import android.widget.TextView
 import kotlinx.android.synthetic.main.custom_info_window.view.*
 
 
@@ -44,10 +40,10 @@ class CustomInfoWindowAda (context: Context) : GoogleMap.InfoWindowAdapter{
         } else {
             view.tName.text = ""
         }
-        val selectedToliet = db.getParticularStudentData(tolietId)
-        view.infoaddress.text = selectedToliet.Address
-        view.grade.text=selectedToliet.Grade
-        view.type.text=selectedToliet.Type
+        val selectedToilet = db.getParticularStudentData(tolietId)
+        view.infoaddress.text = selectedToilet.Address
+        view.grade.text=selectedToilet.Grade
+        view.type.text=selectedToilet.Type
         */
         val title = marker.title
         if (title != null) {
@@ -56,12 +52,19 @@ class CustomInfoWindowAda (context: Context) : GoogleMap.InfoWindowAdapter{
             view.tName.text = ""
         }
 
-        val selectedToliet : Toliet
+        val selectedToilet: Toilet
         if (marker.tag !=null) {
-            selectedToliet = marker.tag as Toliet
-            view.infoaddress.text = selectedToliet.Address
-            view.grade.text=selectedToliet.Grade
-            view.type.text=selectedToliet.Attr
+            selectedToilet = marker.tag as Toilet
+            view.infoaddress.text = selectedToilet.Address
+            view.grade.text= selectedToilet.Grade
+
+            if(selectedToilet.Attr.isEmpty()){
+                view.type.visibility= View.GONE
+            }
+            else {
+                view.type.visibility= View.VISIBLE
+                view.type.text= selectedToilet.Attr
+            }
         }
 
     }

@@ -5,13 +5,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="tw.tolietfinder.sam.AddItem"
+    tools:context="tw.sam.toiletfinder.AddItem"
     tools:showIn="@layout/activity_add_item">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
         <LinearLayout
             android:id="@+id/Name"
             android:layout_width="match_parent"
@@ -27,14 +30,15 @@
                 android:text="名稱" />
 
             <EditText
-                android:inputType="text"
                 android:id="@+id/itemname"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
+                android:inputType="text"
                 android:text="TextView" />
 
         </LinearLayout>
+
         <LinearLayout
             android:id="@+id/Type"
             android:layout_width="match_parent"
@@ -50,14 +54,15 @@
                 android:text="名稱" />
 
             <EditText
-                android:inputType="text"
                 android:id="@+id/itemtype"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
+                android:inputType="text"
                 android:text="TextView" />
 
         </LinearLayout>
+
         <LinearLayout
             android:id="@+id/location"
             android:layout_width="match_parent"
@@ -73,12 +78,12 @@
                 android:text="名稱" />
 
             <EditText
-                android:inputType="text"
                 android:id="@+id/itemlocation"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
-                android:hint="TextView" />
+                android:hint="TextView"
+                android:inputType="text" />
 
         </LinearLayout>
 
@@ -98,11 +103,11 @@
                 android:text="名稱" />
 
             <EditText
-                android:inputType="text"
                 android:id="@+id/itemnaddr"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
+                android:inputType="text"
                 android:text="TextView" />
 
         </LinearLayout>
@@ -122,11 +127,11 @@
                 android:text="名稱" />
 
             <EditText
-                android:inputType="text"
                 android:id="@+id/itemlat"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
+                android:inputType="text"
                 android:text="TextView" />
 
         </LinearLayout>
@@ -146,11 +151,11 @@
                 android:text="名稱" />
 
             <EditText
-                android:inputType="text"
                 android:id="@+id/legname"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
+                android:inputType="text"
                 android:text="TextView" />
 
         </LinearLayout>

@@ -1,6 +1,5 @@
-package tw.tolietfinder.sam
+package tw.sam.toiletfinder
 
-import android.content.Context
 import android.Manifest
 import android.content.Intent
 import android.os.Bundle
@@ -8,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.location.Geocoder
 import android.os.Looper
 
 import android.support.design.widget.Snackbar
@@ -22,59 +22,83 @@ import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import android.support.v4.content.ContextCompat
+import android.view.View
 
 import android.widget.Toast
 import com.facebook.stetho.Stetho
-import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.*
 
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.tasks.OnSuccessListener
 import com.google.maps.android.SphericalUtil.computeDistanceBetween
-import kotlinx.android.synthetic.main.nav_header_main.*
 import kotlinx.android.synthetic.main.nav_header_main.view.*
+import okhttp3.*
+import org.json.JSONArray
+import java.io.IOException
+import java.util.*
 
 
 val MY_PERMISSIONS_REQUEST_LOCATION=99
 
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback,GoogleMap.OnInfoWindowClickListener {
 
     private lateinit var mFusedLocationClient : FusedLocationProviderClient
     private lateinit var mSettingsClient :SettingsClient
     private lateinit var mLocationSettingsRequest: LocationSettingsRequest
     private lateinit var mLocationCallback :LocationCallback
-    private var mCurrentLocation :LatLng = LatLng(0.0,0.0)
+    private var mCurrentLocation :LatLng = LatLng(25.047940, 121.513713)
+    private var httpClient = OkHttpClient()
+    private lateinit var geocoder:Geocoder
+    private var currentCity="臺北市"
+    lateinit private var nearestToilet: Toilet
 
-    private lateinit var tolietList:MutableList<Toliet>
+    private lateinit var toiletList:MutableList<Toilet>
+    private var updatelist = mutableListOf<Toilet>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(toolbar)
-        Stetho.initializeWithDefaults(this);
+        setSupportActionBar(infotoolbar)
+        Stetho.initializeWithDefaults(this)
 
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        mSettingsClient = LocationServices.getSettingsClient(this);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), MY_PERMISSIONS_REQUEST_LOCATION)
+        }
+        else{
+            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+            mSettingsClient = LocationServices.getSettingsClient(this)
+
+        }
+        geocoder = Geocoder(this, Locale.getDefault())
+
+        nav_view.getHeaderView(0).toiletnav.setOnClickListener {
+            if(nearestToiletdis!=-1){
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(nearestToilet.getLatLng(),20f))
+                drawer_layout.closeDrawer(GravityCompat.START)
+            }
+        }
+
 
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         val toggle = ActionBarDrawerToggle(
-                this, drawer_layout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
+                this, drawer_layout, infotoolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
         drawer_layout.addDrawerListener(toggle)
         toggle.syncState()
 
         nav_view.setNavigationItemSelectedListener(this)
 
-        tolietList = MyDBHelper(this).getAllStudentData()
+        toiletList = MyDBHelper(this).getAllStudentData()
 
         createLocationCallback()
         createLocationRequest()
         buildLocationSettingsRequest()
         startLocationUpdates()
+
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray){
@@ -107,8 +131,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private var mLocationRequest = LocationRequest()
     fun createLocationRequest() {
-        mLocationRequest.interval = 10000
-        mLocationRequest.fastestInterval =5000
+        mLocationRequest.interval = 100000
+        mLocationRequest.fastestInterval =50000
         mLocationRequest.priority= LocationRequest.PRIORITY_HIGH_ACCURACY
     }
     private fun buildLocationSettingsRequest() {
@@ -119,23 +143,39 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun createLocationCallback() {
         mLocationCallback = object:LocationCallback() {
              override fun onLocationResult(locationResult:LocationResult) {
-                super.onLocationResult(locationResult);
-
+                super.onLocationResult(locationResult)
                 mCurrentLocation = LatLng(locationResult.getLastLocation().latitude,locationResult.getLastLocation().longitude)
                  Snackbar.make(findViewById(android.R.id.content),
                          "Currrent Location:"+mCurrentLocation.toString(),
                          Snackbar.LENGTH_LONG)
                          .setAction("Action", null).show()
 
-                 for (toliet in tolietList){
+                 for (toliet in toiletList){
                      var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
                      else 9999
-                     if (nearestTolietdis == -1 || nearestTolietdis  > distance){
-                         nearestTolietdis  = distance
-                         nearestToliet = toliet
+                     if (nearestToiletdis == -1 || nearestToiletdis > distance){
+                         nearestToiletdis = distance
+                         nearestToilet = toliet
                      }
                  }
+                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLocation,15f))
                  updateNav()
+                 var previousCity = currentCity
+                 try {
+                     var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
+                     if(!getLocation.isEmpty()){
+                         /*
+                         currentCity=if (getLocation[0].adminArea.equals("台北市")) "臺北市"
+                            else getLocation[0].adminArea*/
+                         currentCity=getLocation[0].locality
+                     }
+                     snackbarshow(currentCity)
+                 } catch (e:IOException) {
+                     e.printStackTrace()
+                 }
+                 if(!downloading && previousCity!=currentCity) getDataFromDB(currentCity)
+
+
             }
         }
     }
@@ -186,72 +226,71 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     private lateinit var mMap: GoogleMap
-    private var nearestTolietdis:Int = -1
-    lateinit private var nearestToliet:Toliet
+    private var nearestToiletdis:Int = -1
+
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.setPadding(0,this.resources.getDimensionPixelSize(R.dimen.abc_action_bar_default_height_material),0,0)
 
         mMap.setInfoWindowAdapter(CustomInfoWindowAda(this))
+        mMap.setOnInfoWindowClickListener(this)
 
         if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mMap.isMyLocationEnabled = true
+            mFusedLocationClient.lastLocation.addOnCompleteListener(this, {task ->
+
+                if(task.isSuccessful && task.getResult() != null) {
+                    mCurrentLocation = LatLng(task.getResult().latitude,task.getResult().longitude)
+
+                    snackbarshow("Currrent Location:"+mCurrentLocation.toString())
+
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLocation,15f))
+                }
+                else {
+                    Log.w("Tag", "getLastLocation:exception", task.exception);
+                }
+            })
         }
         else {
             ActivityCompat.requestPermissions(this,arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),MY_PERMISSIONS_REQUEST_LOCATION)
         }
 
-        mFusedLocationClient.lastLocation.addOnCompleteListener(this, {task ->
 
-            if(task.isSuccessful && task.getResult() != null) {
-                mCurrentLocation = LatLng(task.getResult().latitude,task.getResult().longitude)
-
-                Snackbar.make(findViewById(android.R.id.content),
-                        "Currrent Location:"+mCurrentLocation.toString(),
-                        Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show()
-
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(mCurrentLocation))
-                mMap.animateCamera(CameraUpdateFactory.zoomTo(15f))
-            }
-            else {
-                Log.w("Tag", "getLastLocation:exception", task.exception);
-            }
-        })
         // Add a marker in Sydney and move the camera
         val fju : Marker = mMap.addMarker(
                 MarkerOptions().position(LatLng(25.0354303,121.4324641)).title("FJU University")
         )
 
-        for (toliet in tolietList){
+        for (toliet in toiletList){
             var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon())
             var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
-                            else 9999
+            else 9999
             var tMarkerOptions =MarkerOptions()
                     .position(toliet.getLatLng())
                     .title(toliet.Name)
                     .icon(iconbitmap)
             if (iconbitmap != null) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
             mMap.addMarker(tMarkerOptions).setTag(toliet)
-            if (nearestTolietdis == -1 || nearestTolietdis  > distance){
-                nearestTolietdis  = distance
-                nearestToliet = toliet
-            }
+            /*if (nearestToiletdis == -1 || nearestToiletdis > distance){
+                nearestToiletdis = distance
+                nearestToilet = toliet
+            }*/
         }
-        var navView = nav_view.getHeaderView(0)
-        navView.nearestFromHere.text= "${nearestToliet.Name} 最近距離為：$nearestTolietdis 公尺"
-        navView.nearestTolietIcon.setImageResource(nearestToliet.getIcon())
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(fju.position))
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(LatLng(25.047940, 121.513713)))
+
         mMap.animateCamera(CameraUpdateFactory.zoomTo(15f))
 
     }
     private fun updateNav(){
             var navView = nav_view.getHeaderView(0)
-            nearestTolietdis=computeDistanceBetween(mCurrentLocation,nearestToliet.getLatLng()).toInt()
-            navView.nearestFromHere.text= "${nearestToliet.Name} 最近距離為：$nearestTolietdis 公尺"
-            navView.nearestTolietIcon.setImageResource(nearestToliet.getIcon())
+            if(this::nearestToilet.isInitialized){
+                nearestToiletdis =computeDistanceBetween(mCurrentLocation, nearestToilet.getLatLng()).toInt()
+                navView.nearestFromHere.text= """${nearestToilet.Name}
+                    |最近距離為：$nearestToiletdis 公尺""".trimMargin()
+                navView.nearestTolietIcon.setImageResource(nearestToilet.getIcon())
+            }
     }
     override fun onBackPressed() {
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
@@ -281,8 +320,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Handle navigation view item clicks here.
         when (item.itemId) {
             R.id.nav_camera -> {
-                // Handle the camera action
-                startActivity(Intent(this,DataInfo::class.java))
+
             }
             R.id.nav_gallery -> {
 
@@ -301,6 +339,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
     }
+
     fun getMarkerIconFromDrawable(id :Int) : BitmapDescriptor? {
         if (id==-1) return null
         lateinit var drawable :Drawable
@@ -315,6 +354,75 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
         drawable.draw(canvas);
         return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
+    override fun onInfoWindowClick(p0: Marker?) {
+        var toiletInfo = Intent(this,DataInfo::class.java)
+        if(p0 != null) {
+            toiletInfo.putExtra("toilet",p0.tag as Toilet)
+            toiletInfo.putExtra("Name",p0.title)
+        }
+        Log.d("Mytag",  p0?.tag.toString());
+        startActivity(toiletInfo)
+    }
+
+    fun snackbarshow(str:String){
+        Snackbar.make(findViewById(android.R.id.content), str,
+                Snackbar.LENGTH_LONG)
+                .setAction("Action", null).show()
+    }
+    private var downloading= false
+
+    fun getDataFromDB(city:String){
+        var request = Request.Builder().
+                url("http://1c78066d.ngrok.io/pdo/select_city.php?city=$currentCity").build()
+        var db=MyDBHelper(this)
+        downloading=true
+        httpClient.newCall(request).enqueue(object: Callback {
+            override fun onFailure(call: Call?, e: IOException?) {
+                snackbarshow("get data failed")
+                Log.d("Mytag", e.toString())
+            }
+
+            override fun onResponse(call: Call?, response: Response?) {
+                val responseData = response?.body()?.string()
+                val json = JSONArray(responseData)
+
+                for (i in 0..(json.length() - 1)) {
+                    val item = json.getJSONObject(i)
+                    val num = item.get("number").toString()
+                    val name = item.get("name").toString()
+                    val country = item.get("country").toString()
+                    val city = item.get("city").toString()
+                    val address = item.get("address").toString()
+
+                    val admin = item.get("administration").toString()
+                    val latitude = item.get("latitude").toString()
+                    val longitude = item.get("longitude").toString()
+                    val grade = item.get("grade").toString()
+                    val type = item.get("owned_by").toString()
+
+                    val attr = item.get("type").toString()
+                    if (db.getParticularStudentData(num) == null) {
+                        db.insertStudentData(num, name, address, type, grade, latitude, longitude, country, city, admin)
+                        var newToilet = Toilet(num, name, latitude.toDouble(), longitude.toDouble(), grade, attr,type , address, city, country, admin)
+                        updatelist.add(newToilet)
+                    }
+                }
+            }
+        })
+        for (toliet in updatelist){
+            var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon())
+            var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
+            else 9999
+            var tMarkerOptions =MarkerOptions()
+                    .position(toliet.getLatLng())
+                    .title(toliet.Name)
+                    .icon(iconbitmap)
+            if (iconbitmap != null) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
+            mMap.addMarker(tMarkerOptions).setTag(toliet)
+        }
+        downloading=false
     }
 }
 
