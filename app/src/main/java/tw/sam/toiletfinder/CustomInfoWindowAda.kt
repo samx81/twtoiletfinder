@@ -58,6 +58,29 @@ class CustomInfoWindowAda (context: Context) : GoogleMap.InfoWindowAdapter{
             view.infoaddress.text = selectedToilet.Address
             view.grade.text= selectedToilet.Grade
 
+            var types=db.getParticularToiletName(selectedToilet.Name)
+            var typeOptions = arrayOf(0,0,0,0) //男廁女廁無障礙親子廁
+            for(type in types){
+                when(type){
+                    "男女","男女廁","混合廁" -> {typeOptions[0]=1
+                        typeOptions[1]=1}
+                    "男","男廁"-> typeOptions[0]=1
+                    "女","女廁"-> typeOptions[1]=1
+                    "無障礙","無障礙廁"-> typeOptions[2]=1
+                    "親子","親子廁"-> typeOptions[3]=1
+                }
+            }
+
+            if(typeOptions[0]==0) view.Restroom.visibility=View.GONE else view.Restroom.visibility=View.VISIBLE
+            if(typeOptions[1]==0) view.women.visibility=View.GONE else view.women.visibility=View.VISIBLE
+            if(typeOptions[2]==0) view.restroom.visibility=View.GONE else view.restroom.visibility=View.VISIBLE
+            if(typeOptions[3]==0) view.Kindlyroom.visibility=View.GONE else view.Kindlyroom.visibility=View.VISIBLE
+            var sum=0
+            for(i in typeOptions){
+                sum+=i
+            }
+            if(sum==0) view.type2.visibility=View.VISIBLE else view.type2.visibility=View.GONE
+
             if(selectedToilet.Attr.isEmpty()){
                 view.type.visibility= View.GONE
             }

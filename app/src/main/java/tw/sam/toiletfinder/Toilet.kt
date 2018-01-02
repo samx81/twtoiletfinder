@@ -7,6 +7,7 @@ import com.google.android.gms.maps.model.LatLng
 /**
  * Created by sam on 2017/12/28.
  */
+//
 class Toilet(val Number:String, var Name:String, val Latitude :Double, val Longitude :Double, var Grade:String
              , var Type: String, var Attr:String, val Address:String,var City:String,var Country:String,var Admin:String) :Parcelable{
 
@@ -37,7 +38,7 @@ class Toilet(val Number:String, var Name:String, val Latitude :Double, val Longi
             "娛樂場所","戲院" -> R.drawable.play_icon
             "餐廳" -> R.drawable.restaurant_icon
             "鐵路局","公路車站服務區及休息站","捷運車站","高鐵","航空站" -> R.drawable.transpot_icon
-            else -> -1
+            else -> R.drawable.empty_icon
         }
 
         return assast

@@ -39,15 +39,15 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
     }
 
-    fun insertStudentData(num:String,name: String, address: String, attr: String,grade: String,lat: String,lng: String,country:String,city:String,admin:String): Long {
+    fun insertStudentData(num:String,name: String, address: String,type: String,attr: String,grade: String,lat: String,lng: String,city:String,country:String,admin:String): Long {
         val values = ContentValues()
         values.put("Number", num)
         values.put("Name", name)
         values.put("Address", address)
-        values.put("Type2", attr)
+        values.put("Type2", type)
         values.put("Grade", grade)
         values.put("Latitude", lat)
-
+        values.put("Type",attr)
         values.put("Longitude", lng)
         values.put("Country",country)
         values.put("City",city)
@@ -58,7 +58,7 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
     fun getAllStudentData(): MutableList<Toilet> {
         val stuList: MutableList<Toilet> = mutableListOf<Toilet>()
         val cursor: Cursor = getReadableDatabase().query("toliet", arrayOf("Number","Name","Country","City", "Address" ,
-                "Administration" , "Latitude" , "Longitude" , "Grade" , "Type" , "Type2"), null, null, null, null, null)
+                "Administration" , "Latitude" , "Longitude" , "Grade" , "Type" , "Type2"), null, null, null, null,null )
         try {
             if (cursor.count != 0) {
                 cursor.moveToFirst()
@@ -83,8 +83,8 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
                                 type,
                                attr,
                                 cursor.getString(cursor.getColumnIndex("Address")),
-                                cursor.getString(cursor.getColumnIndex("Country")),
                                 cursor.getString(cursor.getColumnIndex("City")),
+                                cursor.getString(cursor.getColumnIndex("Country")),
                                 cursor.getString(cursor.getColumnIndex("Administration"))
                         ))
                         /*
@@ -104,7 +104,6 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
 
     fun getParticularStudentData(number: String): Toilet? {
         lateinit var particluarToilet: Toilet
-        val db = this.readableDatabase
         val cursor: Cursor = getReadableDatabase().query("toliet", arrayOf("Number","Name","Country","City", "Address" ,
                 "Administration" , "Latitude" , "Longitude" , "Grade" , "Type" , "Type2"), "Number=?", arrayOf(number) , null, null, null)
         try {
@@ -134,8 +133,8 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
                                 cursor.getString(cursor.getColumnIndex("Grade")),
                                 type,attr,
                                 cursor.getString(cursor.getColumnIndex("Address")),
-                                cursor.getString(cursor.getColumnIndex("Country")),
                                 cursor.getString(cursor.getColumnIndex("City")),
+                                cursor.getString(cursor.getColumnIndex("Country")),
                                 cursor.getString(cursor.getColumnIndex("Administration"))
                         )
                     } while ((cursor.moveToNext()));
@@ -147,6 +146,29 @@ class MyDBHelper(context: Context) : SQLiteOpenHelper(context, "testing_db.db", 
         }
 
         return particluarToilet
+    }
+    fun getParticularToiletName(name: String): MutableList<String> {
+        var types: MutableList<String> = mutableListOf<String>()
+        val cursor: Cursor = getReadableDatabase().query("toliet", arrayOf("Name", "Type"), "Name=?", arrayOf(name) , null, null, null)
+        try {
+            if (cursor.getCount() != 0) {
+                cursor.moveToFirst()
+                if (cursor.getCount() > 0) {
+                    do {
+                        var modName=cursor.getString(cursor.getColumnIndex("Name"))
+
+                        var type =cursor.getString(cursor.getColumnIndex("Type"))
+                        if(type!=null) types.add(type)
+                        Log.d("Mytag",  DatabaseUtils.dumpCurrentRowToString(cursor))
+
+                    } while ((cursor.moveToNext()));
+                }
+            }
+        } finally {
+            cursor.close()
+        }
+
+        return types
     }
 }
 
