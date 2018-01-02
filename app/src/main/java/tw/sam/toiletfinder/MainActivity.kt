@@ -61,16 +61,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setSupportActionBar(infotoolbar) // 工具列的佈署
         Stetho.initializeWithDefaults(this) // FB 的 debug 工具佈署
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)// 檢查權限，如果沒有的話就要求
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), MY_PERMISSIONS_REQUEST_LOCATION)
-        }
-        else{
-            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this) //取得座標的模組
-            mSettingsClient = LocationServices.getSettingsClient(this)
 
-        }
-        geocoder = Geocoder(this, Locale.getDefault()) //取得地理位置的模組
 
         // 抽屜最近的廁所那一欄的點擊偵測
         nav_view.getHeaderView(0).toiletnav.setOnClickListener {
@@ -80,10 +71,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
-        // 地圖佈署
-        val mapFragment = supportFragmentManager
-                .findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
+
 
         //抽屜佈署
         val toggle = ActionBarDrawerToggle(
@@ -95,11 +83,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         //取得廁所資料 from 資料庫
         toiletList = MyDBHelper(this).getAllStudentData()
 
-        //下面這邊很麻煩懶的寫
-        createLocationCallback()
-        createLocationRequest()
-        buildLocationSettingsRequest()
-        startLocationUpdates()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)// 檢查權限，如果沒有的話就要求
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), MY_PERMISSIONS_REQUEST_LOCATION)
+        }
+        else{
+            // 地圖佈署
+            val mapFragment = supportFragmentManager
+                    .findFragmentById(R.id.map) as SupportMapFragment
+            mapFragment.getMapAsync(this)
+
+            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this) //取得座標的模組
+            mSettingsClient = LocationServices.getSettingsClient(this)
+            geocoder = Geocoder(this, Locale.getDefault()) //取得地理位置的模組
+            //下面這邊很麻煩懶的寫
+            createLocationCallback()
+            createLocationRequest()
+            buildLocationSettingsRequest()
+            startLocationUpdates()
+        }
+
 
     }
     // 權限授權後的檢查
@@ -107,7 +110,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {
 
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                val mapFragment = supportFragmentManager
+                        .findFragmentById(R.id.map) as SupportMapFragment
+                mapFragment.getMapAsync(this)
 
+                mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this) //取得座標的模組
+                mSettingsClient = LocationServices.getSettingsClient(this)
+                geocoder = Geocoder(this, Locale.getDefault()) //取得地理位置的模組
+                //下面這邊很麻煩懶的寫
+                createLocationCallback()
+                createLocationRequest()
+                buildLocationSettingsRequest()
+                startLocationUpdates()
             } else {
                 Toast.makeText(this, " 需要定位功能 ", Toast.LENGTH_SHORT).show()
             }
@@ -136,8 +150,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     // 多久檢查一次位置的設定
     fun createLocationRequest() {
-        mLocationRequest.interval = 100000
-        mLocationRequest.fastestInterval =50000
+        mLocationRequest.interval = 50000
+        mLocationRequest.fastestInterval =20000
         mLocationRequest.priority= LocationRequest.PRIORITY_HIGH_ACCURACY
     }
 
@@ -151,43 +165,68 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     //主要在檢查完位置後要做的事情
     private fun createLocationCallback() {
         mLocationCallback = object:LocationCallback() {
-             override fun onLocationResult(locationResult:LocationResult) {
-                 super.onLocationResult(locationResult)
+            override fun onLocationResult(locationResult:LocationResult) {
+                super.onLocationResult(locationResult)
 
-                 mCurrentLocation = LatLng(locationResult.getLastLocation().latitude,locationResult.getLastLocation().longitude)
+                mCurrentLocation = LatLng(locationResult.getLastLocation().latitude,locationResult.getLastLocation().longitude)
 
-                 snackbarshow("Currrent Location:"+mCurrentLocation.toString())
+                snackbarshow("Currrent Location:"+mCurrentLocation.toString())
 
-                 //搜尋最近的廁所，要拿去放在抽屜裡面用的
-                 for (toliet in toiletList){
-                     var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
-                     else 9999
-                     if (nearestToiletdis == -1 || nearestToiletdis > distance){
-                         nearestToiletdis = distance
-                         nearestToilet = toliet
-                     }
-                 }
+                //搜尋最近的廁所，要拿去放在抽屜裡面用的
+                for (toliet in toiletList){
+                    var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
+                    else 9999
+                    if (nearestToiletdis == -1 || nearestToiletdis > distance){
+                        nearestToiletdis = distance
+                        nearestToilet = toliet
+                    }
+                }
+                if(updatelist.size>0){
+                    for (toliet in toiletList){
+                        var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
+                        else 9999
+                        if (nearestToiletdis == -1 || nearestToiletdis > distance){
+                            nearestToiletdis = distance
+                            nearestToilet = toliet
+                        }
+                    }
+                }
 
-                 //找到目前位置後移動地圖的鏡頭
-                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLocation,15f))
+                //找到目前位置後移動地圖的鏡頭
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLocation,15f))
 
-                 //更新抽屜訊息
-                 updateNav()
+                //更新抽屜訊息
+                updateNav()
 
-                 //取得地理位置
-                 var previousCity = currentCity
-                 try {
-                     var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
-                     if(!getLocation.isEmpty()){
-                         currentCity=getLocation[0].locality
-                     }
-                     snackbarshow(currentCity)
-                 } catch (e:IOException) {
-                     e.printStackTrace()
-                 }
+                //取得地理位置
+                var previousCity = currentCity
+                try {
+                    var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
+                    if(!getLocation.isEmpty()){
+                        currentCity=getLocation[0].locality
+                    }
+                    snackbarshow(currentCity)
+                } catch (e:IOException) {
+                    e.printStackTrace()
+                }
 
-                 //如果後台沒在下載，地理位置也沒變，不下載新資料
-                 if(!downloading && previousCity!=currentCity) getDataFromDB(currentCity)
+                //如果後台沒在下載，地理位置也沒變，不下載新資料
+                if(!downloading && previousCity!=currentCity) getDataFromDB(currentCity)
+                if(updatelist.size>0 && finishupdate){
+                    for (toliet in updatelist){
+                        var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon())
+                        var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
+                        else 9999
+                        snackbarshow("Adding Toilet:(${toliet.Name}/${updatelist.size})")
+                        var tMarkerOptions =MarkerOptions()
+                                .position(toliet.getLatLng())
+                                .title(toliet.Name)
+                                .icon(iconbitmap)
+                        if (iconbitmap != null) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
+                        mMap.addMarker(tMarkerOptions).setTag(toliet)
+                    }
+                    finishupdate=false
+                }
             }
         }
     }
@@ -293,12 +332,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun updateNav(){
-            var navView = nav_view.getHeaderView(0) //撈出layout
-            if(this::nearestToilet.isInitialized){
-                nearestToiletdis =computeDistanceBetween(mCurrentLocation, nearestToilet.getLatLng()).toInt() //算最近距離
-                navView.nearestFromHere.text= "${nearestToilet.Name}\n最近距離為：$nearestToiletdis 公尺"
-                navView.nearestTolietIcon.setImageResource(nearestToilet.getIcon())
-            }
+        var navView = nav_view.getHeaderView(0) //撈出layout
+        if(this::nearestToilet.isInitialized){
+            nearestToiletdis =computeDistanceBetween(mCurrentLocation, nearestToilet.getLatLng()).toInt() //算最近距離
+            navView.nearestFromHere.text= "${nearestToilet.Name}\n最近距離為：$nearestToiletdis 公尺"
+            navView.nearestTolietIcon.setImageResource(nearestToilet.getIcon())
+        }
     }
 
     override fun onBackPressed() {
@@ -369,6 +408,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     //資訊視窗點擊後的動作
     override fun onInfoWindowClick(p0: Marker?) {
+
         var toiletInfo = Intent(this,DataInfo::class.java) //做包裹
         if(p0 != null) {
             toiletInfo.putExtra("toilet",p0.tag as Toilet)
@@ -385,25 +425,28 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 .setAction("Action", null).show()
     }
     private var downloading= false
-
+    private var finishupdate=false
     //資料庫取得函式
     fun getDataFromDB(city:String){
+        Log.d("mytag",city)
         var request = Request.Builder().
                 url("http://1c78066d.ngrok.io/pdo/select_city.php?city=$currentCity").build()
         var db=MyDBHelper(this)
 
         downloading=true
+
         httpClient.newCall(request).enqueue(object: Callback {
             override fun onFailure(call: Call?, e: IOException?) {
                 snackbarshow("get data failed")
                 Log.d("Mytag", e.toString())
             }
-
             override fun onResponse(call: Call?, response: Response?) {
                 val responseData = response?.body()?.string()
                 val json = JSONArray(responseData)
-
+                Log.d("mytag",json.length().toString())
                 for (i in 0..(json.length() - 1)) {
+                    Log.d("mytag",json.length().toString())
+                    snackbarshow("更新資料中:($i/${json.length()})")
                     val item = json.getJSONObject(i)
                     val num = item.get("number").toString()
                     val name = item.get("name").toString()
@@ -423,21 +466,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         var newToilet = Toilet(num, name, latitude.toDouble(), longitude.toDouble(), grade, attr,type , address, city, country, admin)
                         updatelist.add(newToilet)
                     }
+                    finishupdate=true
                 }
             }
         })
-        for (toliet in updatelist){
-            var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon())
-            var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
-            else 9999
-            var tMarkerOptions =MarkerOptions()
-                    .position(toliet.getLatLng())
-                    .title(toliet.Name)
-                    .icon(iconbitmap)
-            if (iconbitmap != null) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
-            mMap.addMarker(tMarkerOptions).setTag(toliet)
-        }
         downloading=false
     }
 }
-
