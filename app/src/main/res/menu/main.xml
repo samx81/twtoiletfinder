@@ -7,4 +7,14 @@
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/clear_btn"
+        android:orderInCategory="100"
+        android:title="Clear"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/place_btn"
+        android:orderInCategory="100"
+        android:title="Place"
+        app:showAsAction="never" />
 </menu>

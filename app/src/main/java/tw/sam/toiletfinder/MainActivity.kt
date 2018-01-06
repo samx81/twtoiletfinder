@@ -56,6 +56,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var toiletList:MutableList<Toilet>
     private var updatelist = mutableListOf<Toilet>()
     private var mMapisReady=false
+    private var typeFilter = booleanArrayOf(true,true,true,true,true,true,true) // 依序為 公共，私人，運輸，餐廳，遊樂場所，醫院，無屬性
+    lateinit var checkingType:MutableList<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,7 +71,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 drawer_layout.closeDrawer(GravityCompat.START)
             }
         }
-
+        checkingType=getCheckingType(typeFilter)
         //抽屜佈署
         val toggle = ActionBarDrawerToggle(
                 this, drawer_layout, infotoolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
@@ -173,69 +175,34 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
                 if(mMapisReady){
                     //從本地資料庫撈資料放在地圖上
-                    var lastitem =""
-                    for (toliet in toiletList){
-                        if(toliet.Country==currentCity){
-                            var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon()) //生圖示
-                            //檢查一下會不會被沒有類型的資料蓋掉
-                            if (lastitem!=toliet.Name || toliet.getIcon() != R.drawable.empty_icon){
-                                var tMarkerOptions =MarkerOptions()
-                                        .position(toliet.getLatLng())
-                                        .title(toliet.Name)
-                                        .icon(iconbitmap)
-                                //調整錨點
-                                if (toliet.getIcon() != R.drawable.empty_icon) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
-
-                                //放進地圖且加上物件（可能是這邊會造成地圖記憶體過量，但這樣比較方便
-                                mMap.addMarker(tMarkerOptions).setTag(toliet)
-                            }
-                        }
-
-                    }
+                    placeMarker(mMap,toiletList,currentCity)
                     mMapisReady=false
                 }
 
                 //搜尋最近的廁所，要拿去放在抽屜裡面用的
-                for (toliet in toiletList){
-                    val distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
-                    else 9999
-                    if (nearestToiletdis == -1 || nearestToiletdis > distance){
-                        nearestToiletdis = distance
-                        nearestToilet = toliet
-                    }
+                getNearest(toiletList)
 
-                }
                 if(!downloading){
-                    for (toliet in updatelist){
-                        var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
-                        else 9999
-                        if (nearestToiletdis == -1 || nearestToiletdis > distance){
-                            nearestToiletdis = distance
-                            nearestToilet = toliet
-                        }
-                    }
+                    getNearest(updatelist)
                 }
 
 
                 //找到目前位置後移動地圖的鏡頭
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLocation,15f))
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLocation,18f))
 
                 //更新抽屜訊息
                 updateNav()
 
                 //如果後台沒在下載，地理位置也沒變，不下載新資料
-                if(!downloading && previousCity!=currentCity) getDataFromDB(currentCity)
+                if(!downloading && previousCity!=currentCity) {
+                    getDataFromDB(currentCity)
+                    placeMarker(mMap,toiletList,currentCity)
+                }
+
                 if(updatelist.size>0 && finishupdate){
-                    for (toliet in updatelist){
-                        var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon())
-                        snackbarshow("Adding Toilet:(${toliet.Name}/${updatelist.size})")
-                        var tMarkerOptions =MarkerOptions()
-                                .position(toliet.getLatLng())
-                                .title(toliet.Name)
-                                .icon(iconbitmap)
-                        if (iconbitmap != null) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
-                        mMap.addMarker(tMarkerOptions).setTag(toliet)
-                    }
+                    snackbarshow("放置圖示中..")
+                    placeMarker(mMap,updatelist,currentCity)
+
                     finishupdate=false
                 }
             }
@@ -286,8 +253,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         try {
             var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
             if(!getLocation.isEmpty()){
+                previousCity=currentCity
                 currentCity=getLocation[0].locality
             }
+
             snackbarshow(currentCity)
         } catch (e:IOException) {
             e.printStackTrace()
@@ -370,8 +339,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // as you specify a parent activity in AndroidManifest.xml.
         when (item.itemId) {
             R.id.action_settings -> return true
+            R.id.clear_btn -> mMap.clear() //清除icon
+            R.id.place_btn -> //台北車站的Marker，測試用
+                mMap.addMarker(
+                MarkerOptions().position(LatLng(25.047780, 121.517333)).title("FJU University")
+        )
             else -> return super.onOptionsItemSelected(item)
         }
+        return true
     }
 
     //抽屜項目選擇後的動作
@@ -475,18 +450,70 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     if (name.indexOf("-")!=-1) name = name.split("-")[0]
                     if (attr=="" && name.indexOf("-")!=-1) attr = name.split("-")[1]
                     if (db.getParticularStudentData(num) == null) {
-                        db.insertStudentData(num, name, address, type,attr, grade, latitude, longitude, country, city, admin)
+                        db.insertStudentData(num, name, address, type,attr, grade, latitude, longitude, city, country, admin)
 
                         if (type== "超市") type = "超商"
                         var newToilet = Toilet(num, name, latitude.toDouble(), longitude.toDouble(), grade, attr,type , address, city, country, admin)
                         updatelist.add(newToilet)
                     }
-                    previousCity=city
                     finishupdate=true
                 }
                 downloading=false
             }
         })
+    }
 
+    fun placeMarker(googleMap: GoogleMap, toilets:MutableList<Toilet>, location:String){
+        var lastitem =""
+        for (toliet in toilets){
+            if(toliet.City==location && checkingType.indexOf(toliet.Attr)!=-1){
+                var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon()) //生圖示
+                //檢查一下會不會被沒有類型的資料蓋掉
+                if (lastitem!=toliet.Name || toliet.getIcon() != R.drawable.empty_icon){
+                    var tMarkerOptions =MarkerOptions()
+                            .position(toliet.getLatLng())
+                            .title(toliet.Name)
+                            .icon(iconbitmap)
+                    //調整錨點
+                    if (toliet.getIcon() != R.drawable.empty_icon) tMarkerOptions.anchor(0.5.toFloat(),0.5.toFloat())
+
+                    //放進地圖且加上物件（可能是這邊會造成地圖記憶體過量，但這樣比較方便
+                    googleMap.addMarker(tMarkerOptions).setTag(toliet)
+                    snackbarshow("Adding Toilet:(${toliet.Name})")
+                }
+            }
+        }
+    }
+    fun getCheckingType(types:BooleanArray): MutableList<String>{
+        var checkingType= mutableListOf<String>()
+        for(i in 0..types.size-1) {
+            if (types[i]) {
+                when (i) {
+                    0 -> checkingType.addAll(arrayOf("公園", "寺廟教堂等宗教活動場所", "觀光地區及風景區", "港區", "文化育樂活動場所",
+                            "森林遊樂區", "公營事業機構設置供民眾使用者及其他", "各級社教機關",
+                            "公家機關設置供民眾使用者", "各級機關學校", "民眾團體活動場所"))
+
+                    1 -> checkingType.addAll(arrayOf("百貨公司", "加油站", "超商", "市場", "量販店", "旅館"))
+                    2 -> checkingType.addAll(arrayOf("鐵路局", "公路車站服務區及休息站", "捷運車站", "高鐵", "航空站"))
+                    3 -> checkingType.add("餐廳")
+                    4 -> checkingType.addAll(arrayOf("娛樂場所", "戲院"))
+                    5 -> checkingType.add("醫院")
+                    6 -> checkingType.add("")
+                }
+            }
+        }
+        return checkingType
+    }
+    fun getNearest(toilets:MutableList<Toilet>){
+        for (toliet in toilets){
+            if(checkingType.indexOf(toliet.Attr)!=-1){
+                var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
+                else 9999
+                if (nearestToiletdis == -1 || nearestToiletdis > distance){
+                    nearestToiletdis = distance
+                    nearestToilet = toliet
+                }
+            }
+        }
     }
 }
