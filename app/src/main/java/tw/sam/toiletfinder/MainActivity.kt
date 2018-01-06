@@ -364,7 +364,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
             }
             R.id.nav_slideshow -> {
-
+                startActivity(Intent(this,History::class.java))
             }
             R.id.nav_manage -> {
                 startActivity(Intent(this,AddItem::class.java))

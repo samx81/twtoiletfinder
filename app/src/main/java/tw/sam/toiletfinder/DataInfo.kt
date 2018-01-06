@@ -1,7 +1,13 @@
 package tw.sam.toiletfinder
 
+import android.app.Dialog
+import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.preference.PreferenceManager
+import android.support.design.widget.Snackbar
+import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -17,6 +23,7 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
     private lateinit var toilet: Toilet
+    private lateinit var preference:SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_data_info)
@@ -27,6 +34,20 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
 
         toilet = intent.extras.getParcelable("toilet")
 
+        preference = PreferenceManager.getDefaultSharedPreferences(this)
+        val preferEditor = preference.edit()
+        var history  = preference.getString("history","")
+        if (history== ""){
+            history+="${toilet.Number}"
+        }
+        else if(history.split(", ").size<10){
+            history+=", ${toilet.Number}"
+        }
+        else{
+            history=history.substring(history.indexOf(", "))+", ${toilet.Number}"
+        }
+        preferEditor.putString("history",history)
+        preferEditor.apply()
         citytext.text = toilet.Country+toilet.City
         addrtext.text = toilet.Address
         owntext.text = toilet.Admin
@@ -39,17 +60,14 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
         }
         grade.text = toilet.Grade
 
-        var types=MyDBHelper(this).getParticularToiletName(toilet.Name)
         var typeOptions = arrayOf(0,0,0,0) //男廁女廁無障礙親子廁
-        for(type in types){
-            when(type){
-                "男女","男女廁" -> {typeOptions[0]=1
-                    typeOptions[1]=1}
-                "男","男廁"-> typeOptions[0]=1
-                "女","女廁"-> typeOptions[1]=1
-                "無障礙","無障礙廁"-> typeOptions[2]=1
-                "親子","親子廁"-> typeOptions[3]=1
-            }
+        when(toilet.Type){
+            "男女","男女廁","混合廁"-> {typeOptions[0]=1
+                typeOptions[1]=1}
+            "男","男廁"-> typeOptions[0]=1
+            "女","女廁"-> typeOptions[1]=1
+            "無障礙","無障礙廁"-> typeOptions[2]=1
+            "親子","親子廁"-> typeOptions[3]=1
         }
 
         if(typeOptions[0]==0) Restroom.visibility=View.GONE
@@ -76,6 +94,16 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
             android.R.id.home -> {
                 onBackPressed()
                 return true
+            }
+            R.id.report_btn -> {
+                AlertDialog.Builder(this).setMultiChoiceItems(arrayOf<CharSequence>("測試1","測試2"),null,DialogInterface.OnMultiChoiceClickListener
+                { dialogInterface, i, b ->
+                    if(b) Snackbar.make(findViewById(android.R.id.content),"$i",Snackbar.LENGTH_LONG)
+                            .setAction("Action",null)
+                            .show() })
+                        .setPositiveButton("OK",DialogInterface.OnClickListener {
+                            dialogInterface, i ->  })
+                        .create().show()
             }
         }
         return super.onOptionsItemSelected(item)

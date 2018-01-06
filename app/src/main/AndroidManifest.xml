@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         <activity
-            android:name="tw.sam.toiletfinder.MainActivity"
+            android:name=".MainActivity"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -40,13 +40,17 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name="tw.sam.toiletfinder.DataInfo"
+            android:name=".DataInfo"
             android:label="資料"
-            android:parentActivityName="tw.sam.toiletfinder.MainActivity" />
+            android:parentActivityName=".MainActivity" />
         <activity
-            android:name="tw.sam.toiletfinder.AddItem"
+            android:name=".AddItem"
             android:label="@string/title_activity_add_item"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity android:name=".History"
+            android:label="歷史紀錄">
+
+        </activity>
     </application>
 
 </manifest>
