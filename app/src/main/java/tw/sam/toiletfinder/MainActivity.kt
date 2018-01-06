@@ -46,15 +46,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var mSettingsClient :SettingsClient
     private lateinit var mLocationSettingsRequest: LocationSettingsRequest
     private lateinit var mLocationCallback :LocationCallback
-    private var mCurrentLocation :LatLng = LatLng(25.047940, 121.513713)
-    private var httpClient = OkHttpClient()
     private lateinit var geocoder:Geocoder
+    private var httpClient = OkHttpClient()
+
+    private var mCurrentLocation :LatLng = LatLng(25.047940, 121.513713)
     private var currentCity="臺北市"
     private var previousCity=""
-    lateinit private var nearestToilet: Toilet
 
+    lateinit private var nearestToilet: Toilet
     private lateinit var toiletList:MutableList<Toilet>
     private var updatelist = mutableListOf<Toilet>()
+
     private var mMapisReady=false
     private var typeFilter = booleanArrayOf(true,true,true,true,true,true,true) // 依序為 公共，私人，運輸，餐廳，遊樂場所，醫院，無屬性
     lateinit var checkingType:MutableList<String>
@@ -77,8 +79,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 this, drawer_layout, infotoolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
         drawer_layout.addDrawerListener(toggle)
         toggle.syncState()
+
         //抽屜項目點擊偵測
         nav_view.setNavigationItemSelectedListener(this)
+
         //取得廁所資料 from 資料庫
         toiletList = MyDBHelper(this).getAllStudentData()
 
