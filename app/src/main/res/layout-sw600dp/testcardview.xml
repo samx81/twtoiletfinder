@@ -29,7 +29,7 @@
 
             <ImageView
                 android:id="@+id/cardicon"
-                android:layout_width="80dp"
+                android:layout_width="120dp"
                 android:layout_height="150dp"
                 android:adjustViewBounds="true"
                 android:cropToPadding="false"
@@ -82,8 +82,7 @@
                             android:padding="@dimen/nav_header_vertical_spacing"
                             android:paddingLeft="@dimen/nav_header_vertical_spacing"
                             android:paddingRight="@dimen/nav_header_vertical_spacing"
-                            android:text="寺廟教堂等宗教活動場所"
-                            android:textSize="12sp" />
+                            android:text="寺廟教堂等宗教活動場所" />
 
                         <TextView
                             android:id="@+id/higrade"
@@ -95,8 +94,7 @@
                             android:padding="@dimen/nav_header_vertical_spacing"
                             android:paddingLeft="@dimen/nav_header_vertical_spacing"
                             android:paddingRight="@dimen/nav_header_vertical_spacing"
-                            android:text="優等級"
-                            android:textSize="12sp" />
+                            android:text="優等級" />
                     </LinearLayout>
 
                 </LinearLayout>

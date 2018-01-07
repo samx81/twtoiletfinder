@@ -153,8 +153,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     // 多久檢查一次位置的設定
     fun createLocationRequest() {
-        mLocationRequest.interval = 50000
-        mLocationRequest.fastestInterval =20000
+        mLocationRequest.interval = 20000
+        mLocationRequest.fastestInterval =10000
         mLocationRequest.priority= LocationRequest.PRIORITY_HIGH_ACCURACY
     }
 
@@ -174,8 +174,21 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 mCurrentLocation = LatLng(locationResult.getLastLocation().latitude,locationResult.getLastLocation().longitude)
 
                 snackbarshow("Currrent Location:"+mCurrentLocation.toString())
-
                 getCurrentCity()
+                //如果後台沒在下載，地理位置也沒變，不下載新資料
+                if(!downloading && previousCity!=currentCity) {
+                    getDataFromDB(currentCity)
+                    placeMarker(mMap,toiletList,currentCity)
+                }
+
+                if(updatelist.size>0 && finishupdate){
+                    snackbarshow("放置圖示中..")
+                    placeMarker(mMap,updatelist,currentCity)
+
+                    finishupdate=false
+                }
+
+
 
                 if(mMapisReady){
                     //從本地資料庫撈資料放在地圖上
@@ -196,19 +209,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
                 //更新抽屜訊息
                 updateNav()
-
-                //如果後台沒在下載，地理位置也沒變，不下載新資料
-                if(!downloading && previousCity!=currentCity) {
-                    getDataFromDB(currentCity)
-                    placeMarker(mMap,toiletList,currentCity)
-                }
-
-                if(updatelist.size>0 && finishupdate){
-                    snackbarshow("放置圖示中..")
-                    placeMarker(mMap,updatelist,currentCity)
-
-                    finishupdate=false
-                }
             }
         }
     }
@@ -462,8 +462,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         var newToilet = Toilet(num, name, latitude.toDouble(), longitude.toDouble(), grade, attr,type , address, city, country, admin)
                         updatelist.add(newToilet)
                     }
-                    finishupdate=true
+
                 }
+                finishupdate=true
                 downloading=false
             }
         })
