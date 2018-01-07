@@ -1,6 +1,11 @@
 package tw.sam.toiletfinder
 
+import android.app.PendingIntent.getActivity
+import android.content.Context
+import android.content.Intent
+import android.support.v4.content.ContextCompat.startActivity
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,8 +27,17 @@ class historyAdapter(val history:MutableList<Toilet>) :RecyclerView.Adapter<hist
     override fun onBindViewHolder(holder: ViewHolder?, position: Int) {
         holder?.render(history.get(position))
     }
+
     inner class ViewHolder(itemView:View):RecyclerView.ViewHolder(itemView){
         fun render(toilet:Toilet){
+            itemView.setOnClickListener(object : View.OnClickListener {
+                override fun onClick(v: View) {
+                    var toiletInfo = Intent(itemView.context, DataInfo::class.java) //做包裹
+                    toiletInfo.putExtra("toilet", toilet)
+                    toiletInfo.putExtra("Name", toilet.Name)
+                    itemView.context.startActivity(toiletInfo) //送進詳細資訊欄
+                }
+            })
 
             itemView.hiName.text = toilet.Name
             itemView.hiaddress.text = toilet.Address

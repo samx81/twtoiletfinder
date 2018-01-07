@@ -60,20 +60,41 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
         }
         grade.text = toilet.Grade
 
+        var types=MyDBHelper(this).getParticularToiletName(toilet.Name)
         var typeOptions = arrayOf(0,0,0,0) //男廁女廁無障礙親子廁
-        when(toilet.Type){
-            "男女","男女廁","混合廁"-> {typeOptions[0]=1
-                typeOptions[1]=1}
-            "男","男廁"-> typeOptions[0]=1
-            "女","女廁"-> typeOptions[1]=1
-            "無障礙","無障礙廁"-> typeOptions[2]=1
-            "親子","親子廁"-> typeOptions[3]=1
+        for(type in types){
+            when(type){
+                "男女","男女廁","混合廁" -> {typeOptions[0]++
+                    typeOptions[1]++}
+                "男","男廁"-> typeOptions[0]++
+                "女","女廁"-> typeOptions[1]++
+                "無障礙","無障礙廁"-> typeOptions[2]++
+                "親子","親子廁"-> typeOptions[3]++
+            }
         }
 
-        if(typeOptions[0]==0) Restroom.visibility=View.GONE
-        if(typeOptions[1]==0) women.visibility=View.GONE
-        if(typeOptions[2]==0) restroom.visibility=View.GONE
-        if(typeOptions[3]==0) Kindlyroom.visibility=View.GONE
+        if(typeOptions[0]==0) {
+            Restroom.visibility=View.GONE
+            mannum.visibility=View.GONE
+        }
+        else {
+            mannum.text=typeOptions[0].toString()
+        }
+        if(typeOptions[1]==0) {
+            women.visibility=View.GONE
+            wrnum.visibility=View.GONE
+        }
+        else wrnum.text=typeOptions[1].toString()
+        if(typeOptions[2]==0) {
+            restroom.visibility=View.GONE
+            rrnum.visibility=View.GONE
+        }
+        else rrnum.text=typeOptions[2].toString()
+        if(typeOptions[3]==0) {
+            Kindlyroom.visibility=View.GONE
+            krnum.visibility=View.GONE
+        }
+        else krnum.text=typeOptions[3].toString()
         var sum=0
         for(i in typeOptions){
             sum+=i
@@ -96,14 +117,7 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
                 return true
             }
             R.id.report_btn -> {
-                AlertDialog.Builder(this).setMultiChoiceItems(arrayOf<CharSequence>("測試1","測試2"),null,DialogInterface.OnMultiChoiceClickListener
-                { dialogInterface, i, b ->
-                    if(b) Snackbar.make(findViewById(android.R.id.content),"$i",Snackbar.LENGTH_LONG)
-                            .setAction("Action",null)
-                            .show() })
-                        .setPositiveButton("OK",DialogInterface.OnClickListener {
-                            dialogInterface, i ->  })
-                        .create().show()
+                preference.edit().clear().apply()
             }
         }
         return super.onOptionsItemSelected(item)
@@ -112,7 +126,6 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
         mMap = googleMap
 
         mMap.addMarker(MarkerOptions().position(toilet.getLatLng()).title(toilet.Name))
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(toilet.getLatLng(),15f))
-        //mMap.animateCamera(CameraUpdateFactory.zoomTo(15f))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(toilet.getLatLng(),18f))
     }
 }

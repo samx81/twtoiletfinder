@@ -367,7 +367,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 startActivity(Intent(this,History::class.java))
             }
             R.id.nav_manage -> {
-                startActivity(Intent(this,AddItem::class.java))
+                var intent = Intent(this,AddItem::class.java)
+                intent.putExtra("currentLocation",mCurrentLocation)
+                startActivity(intent)
             }
             R.id.nav_share -> {
 
