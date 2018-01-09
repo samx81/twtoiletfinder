@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this) //取得座標的模組
             mSettingsClient = LocationServices.getSettingsClient(this)
-            geocoder = Geocoder(this, Locale.getDefault()) //取得地理位置的模組
+            geocoder = Geocoder(this, Locale.TAIWAN) //取得地理位置的模組
             //下面這邊很麻煩懶的寫
             createLocationCallback()
             createLocationRequest()
@@ -174,7 +174,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 mCurrentLocation = LatLng(locationResult.getLastLocation().latitude,locationResult.getLastLocation().longitude)
 
                 snackbarshow("Currrent Location:"+mCurrentLocation.toString())
-                getCurrentCity()
+
                 //如果後台沒在下載，地理位置也沒變，不下載新資料
                 if(!downloading && previousCity!=currentCity) {
                     getDataFromDB(currentCity)
@@ -187,7 +187,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
                     finishupdate=false
                 }
-
+                getCurrentCity()
 
 
                 if(mMapisReady){
@@ -254,11 +254,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     fun getCurrentCity(){
         //取得地理位置
+        var aa =0
         try {
             var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
             if(!getLocation.isEmpty()){
                 previousCity=currentCity
-                currentCity=getLocation[0].locality
+                aa =getLocation[0].getAddressLine(0).indexOf("台灣")+5
+                currentCity=getLocation[0].getAddressLine(0).substring(aa..aa+2)
+
             }
 
             snackbarshow(currentCity)
@@ -291,7 +294,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     mCurrentLocation = LatLng(task.getResult().latitude,task.getResult().longitude)
 
                     snackbarshow("地圖確認當前座標:"+mCurrentLocation.toString())
-                    getCurrentCity()
+                    var aa= 0
+                    try {
+                        var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
+                        if(!getLocation.isEmpty()){
+                            aa =getLocation[0].getAddressLine(0).indexOf("台灣")+5
+                            currentCity=getLocation[0].getAddressLine(0).substring(aa..aa+2)
+
+                        }
+
+                        snackbarshow(currentCity)
+                    } catch (e:IOException) {
+                        e.printStackTrace()
+                    }
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLocation,15f))
                 }
                 else {
