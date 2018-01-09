@@ -1,6 +1,7 @@
 package tw.sam.toiletfinder
 
 import android.Manifest
+import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.content.pm.PackageManager
@@ -58,8 +59,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var updatelist = mutableListOf<Toilet>()
 
     private var mMapisReady=false
-    private var typeFilter = booleanArrayOf(true,true,true,true,true,true,true) // 依序為 公共，私人，運輸，餐廳，遊樂場所，醫院，無屬性
+    private var typeFilter = booleanArrayOf(true,true,true,true) // 依序為 男, 女, 無障礙, 親子
+    private var tempFilter = booleanArrayOf(true,true,true,true)
+    private var type2Filter = booleanArrayOf(true,true,true,true,true,true,true) // 依序為 公共，私人，運輸，餐廳，遊樂場所，醫院，無屬性
     lateinit var checkingType:MutableList<String>
+    lateinit var checkingType2:MutableList<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +77,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 drawer_layout.closeDrawer(GravityCompat.START)
             }
         }
-        checkingType=getCheckingType(typeFilter)
+        checkingType = getCheckingType(typeFilter, 1)
+        checkingType2 = getCheckingType(type2Filter, 2)
         //抽屜佈署
         val toggle = ActionBarDrawerToggle(
                 this, drawer_layout, infotoolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
@@ -360,14 +365,62 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // as you specify a parent activity in AndroidManifest.xml.
         when (item.itemId) {
             R.id.action_settings -> return true
-            R.id.clear_btn -> mMap.clear() //清除icon
-            R.id.place_btn -> //台北車站的Marker，測試用
-                mMap.addMarker(
-                MarkerOptions().position(LatLng(25.047780, 121.517333)).title("FJU University")
-        )
+            R.id.filter -> showFilterAlert()
             else -> return super.onOptionsItemSelected(item)
         }
         return true
+    }
+
+    fun showFilterAlert(){
+        showTypeAlert()
+    }
+
+    fun showTypeAlert(){
+        val types = arrayOf<CharSequence>("男廁", "女廁", "無障礙廁", "親子廁")
+        val builder = android.app.AlertDialog.Builder(this)
+                .setTitle("請選擇要顯示在地圖上的項目")
+                .setMultiChoiceItems(types, tempFilter, DialogInterface.OnMultiChoiceClickListener{di, which, isChecked ->
+
+                })
+                .setPositiveButton("確定", DialogInterface.OnClickListener{di, which ->
+                    showType2Alert()
+                })
+                .setNegativeButton("取消", DialogInterface.OnClickListener{di, which ->
+                    tempFilter = booleanArrayOf(true,true,true,true)
+                })
+                .create().show()
+    }
+
+    fun showType2Alert(){
+        val types = arrayOf<CharSequence>("公共", "私人", "運輸", "餐廳", "遊樂場所", "醫院", "無屬性")
+        var temp2Filter = booleanArrayOf(true, true, true, true, true, true, true)
+        for(i in 0..6){
+            temp2Filter[i] = type2Filter[i]
+        }
+        val builder = android.app.AlertDialog.Builder(this)
+                .setTitle("請選擇要顯示在地圖上的項目")
+                .setMultiChoiceItems(types, temp2Filter, DialogInterface.OnMultiChoiceClickListener{di, which, isChecked ->
+
+                })
+                .setPositiveButton("確定", DialogInterface.OnClickListener{di, which ->
+                    for(i in 0..3){
+                        typeFilter[i] = tempFilter[i]
+                    }
+                    for(i in 0..6){
+                        type2Filter[i] = temp2Filter[i]
+                    }
+                    checkingType = getCheckingType(typeFilter, 1)
+                    checkingType2 = getCheckingType(type2Filter, 2)
+                    mMap.clear()
+                    placeMarker(mMap, toiletList, currentCity)
+                    getNearest(toiletList)
+                })
+                .setNegativeButton("取消", DialogInterface.OnClickListener{di, which ->
+                    tempFilter = booleanArrayOf(true,true,true,true)
+                    temp2Filter = booleanArrayOf(true,true,true,true,true,true,true)
+                })
+                .create().show()
+
     }
 
     //抽屜項目選擇後的動作
@@ -490,7 +543,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     fun placeMarker(googleMap: GoogleMap, toilets:MutableList<Toilet>, location:String){
         var lastitem =""
         for (toliet in toilets){
-            if(toliet.City==location && checkingType.indexOf(toliet.Attr)!=-1){
+            if(toliet.City==location && checkingType.indexOf(toliet.Type)!=-1 && checkingType2.indexOf(toliet.Attr)!=-1){
                 var iconbitmap = getMarkerIconFromDrawable(toliet.getIcon()) //生圖示
                 //檢查一下會不會被沒有類型的資料蓋掉
                 if (lastitem!=toliet.Name || toliet.getIcon() != R.drawable.empty_icon){
@@ -508,21 +561,34 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
     }
-    fun getCheckingType(types:BooleanArray): MutableList<String>{
+    fun getCheckingType(types:BooleanArray, whichType: Int): MutableList<String>{
         var checkingType= mutableListOf<String>()
-        for(i in 0..types.size-1) {
-            if (types[i]) {
-                when (i) {
-                    0 -> checkingType.addAll(arrayOf("公園", "寺廟教堂等宗教活動場所", "觀光地區及風景區", "港區", "文化育樂活動場所",
-                            "森林遊樂區", "公營事業機構設置供民眾使用者及其他", "各級社教機關",
-                            "公家機關設置供民眾使用者", "各級機關學校", "民眾團體活動場所"))
-
-                    1 -> checkingType.addAll(arrayOf("百貨公司", "加油站", "超商", "市場", "量販店", "旅館"))
-                    2 -> checkingType.addAll(arrayOf("鐵路局", "公路車站服務區及休息站", "捷運車站", "高鐵", "航空站"))
-                    3 -> checkingType.add("餐廳")
-                    4 -> checkingType.addAll(arrayOf("娛樂場所", "戲院"))
-                    5 -> checkingType.add("醫院")
-                    6 -> checkingType.add("")
+        if(1 == whichType) {
+            for (i in 0..types.size - 1) {
+                if (types[i]) {
+                    when (i) {
+                        0 -> checkingType.add("男廁")
+                        1 -> checkingType.add("女廁")
+                        2 -> checkingType.add("無障礙廁")
+                        3 -> checkingType.add("親子廁")
+                    }
+                }
+            }
+        }
+        else {
+            for (i in 0..types.size - 1) {
+                if (types[i]) {
+                    when (i) {
+                        0 -> checkingType.addAll(arrayOf("公園", "寺廟教堂等宗教活動場所", "觀光地區及風景區", "港區", "文化育樂活動場所",
+                                "森林遊樂區", "公營事業機構設置供民眾使用者及其他", "各級社教機關",
+                                "公家機關設置供民眾使用者", "各級機關學校", "民眾團體活動場所"))
+                        1 -> checkingType.addAll(arrayOf("百貨公司", "加油站", "超商", "市場", "量販店", "旅館"))
+                        2 -> checkingType.addAll(arrayOf("鐵路局", "公路車站服務區及休息站", "捷運車站", "高鐵", "航空站"))
+                        3 -> checkingType.add("餐廳")
+                        4 -> checkingType.addAll(arrayOf("娛樂場所", "戲院"))
+                        5 -> checkingType.add("醫院")
+                        6 -> checkingType.add("")
+                    }
                 }
             }
         }
@@ -530,7 +596,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
     fun getNearest(toilets:MutableList<Toilet>){
         for (toliet in toilets){
-            if(checkingType.indexOf(toliet.Attr)!=-1){
+            if(checkingType.indexOf(toliet.Type)!=-1 && checkingType2.indexOf(toliet.Attr)!=-1){
                 var distance = if(mCurrentLocation!=LatLng(0.0,0.0)) computeDistanceBetween(mCurrentLocation,toliet.getLatLng()).toInt()
                 else 9999
                 if (nearestToiletdis == -1 || nearestToiletdis > distance){
