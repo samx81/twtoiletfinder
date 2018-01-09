@@ -23,6 +23,7 @@ import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import android.support.v4.content.ContextCompat
+import android.view.View
 
 import android.widget.Toast
 import com.facebook.stetho.Stetho
@@ -66,6 +67,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     lateinit var checkingType2:MutableList<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.SplashTheme)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(infotoolbar) // 工具列的佈署
@@ -89,7 +91,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         nav_view.setNavigationItemSelectedListener(this)
 
         //取得廁所資料 from 資料庫
-        toiletList = MyDBHelper(this).getAllStudentData()
+        toiletList = MyDBHelper(this).getAllToiletData()
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)// 檢查權限，如果沒有的話就要求
                 != PackageManager.PERMISSION_GRANTED) {
@@ -197,6 +199,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 if(mMapisReady){
                     //從本地資料庫撈資料放在地圖上
                     placeMarker(mMap,toiletList,currentCity)
+                    splash.visibility=View.GONE
+                    mapp.visibility = View.VISIBLE
                     mMapisReady=false
                 }
 
@@ -333,6 +337,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         mMap.moveCamera(CameraUpdateFactory.newLatLng(LatLng(25.047940, 121.513713)))
         mMap.animateCamera(CameraUpdateFactory.zoomTo(15f))
+
         mMapisReady=true
     }
 
@@ -364,8 +369,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         when (item.itemId) {
-            R.id.action_settings -> return true
-            R.id.filter -> showFilterAlert()
+            R.id.filter-> showFilterAlert()
             else -> return super.onOptionsItemSelected(item)
         }
         return true
@@ -413,7 +417,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     checkingType2 = getCheckingType(type2Filter, 2)
                     mMap.clear()
                     placeMarker(mMap, toiletList, currentCity)
-                    getNearest(toiletList)
+                    placeMarker(mMap, updatelist, currentCity)
+                    nearestToiletdis = -1
                 })
                 .setNegativeButton("取消", DialogInterface.OnClickListener{di, which ->
                     tempFilter = booleanArrayOf(true,true,true,true)
@@ -525,8 +530,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
                     if (name.indexOf("-")!=-1) name = name.split("-")[0]
                     if (attr=="" && name.indexOf("-")!=-1) attr = name.split("-")[1]
-                    if (db.getParticularStudentData(num) == null) {
-                        db.insertStudentData(num, name, address, type,attr, grade, latitude, longitude, city, country, admin)
+                    if (db.getParticularToiletData(num) == null) {
+                        db.insertToiletData(num, name, address, type,attr, grade, latitude, longitude, city, country, admin)
 
                         if (type== "超市") type = "超商"
                         var newToilet = Toilet(num, name, latitude.toDouble(), longitude.toDouble(), grade, attr,type , address, city, country, admin)
@@ -567,10 +572,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             for (i in 0..types.size - 1) {
                 if (types[i]) {
                     when (i) {
-                        0 -> checkingType.add("男廁")
-                        1 -> checkingType.add("女廁")
-                        2 -> checkingType.add("無障礙廁")
-                        3 -> checkingType.add("親子廁")
+                        0 -> checkingType.addAll(arrayOf("男廁","男","男女","男女廁","混合廁"))
+                        1 -> checkingType.addAll(arrayOf("女廁","女","男女","男女廁","混合廁"))
+                        2 -> checkingType.addAll(arrayOf("無障礙廁","無障礙"))
+                        3 -> checkingType.addAll(arrayOf("親子廁","親子"))
                     }
                 }
             }

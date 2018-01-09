@@ -40,7 +40,7 @@ class CustomInfoWindowAda (context: Context) : GoogleMap.InfoWindowAdapter{
         } else {
             view.tName.text = ""
         }
-        val selectedToilet = db.getParticularStudentData(tolietId)
+        val selectedToilet = db.getParticularToiletData(tolietId)
         view.infoaddress.text = selectedToilet.Address
         view.grade.text=selectedToilet.Grade
         view.type.text=selectedToilet.Type

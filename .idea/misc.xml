@@ -25,6 +25,7 @@
     </option>
   </component>
   <component name="ProjectPlainTextFileTypeManager">
+    <file url="file://$PROJECT_DIR$/app/src/main/res/layout/content_add_item.xml" />
     <file url="file://$PROJECT_DIR$/app/src/main/res/layout/history_item.xml" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" project-jdk-name="1.8" project-jdk-type="JavaSDK">

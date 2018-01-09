@@ -1,13 +1,13 @@
 package tw.sam.toiletfinder
 
-import android.app.Dialog
-import android.content.DialogInterface
+import android.content.Intent
 import android.content.SharedPreferences
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.design.widget.Snackbar
-import android.support.v7.app.AlertDialog
+import android.util.Log
+
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -18,6 +18,11 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.activity_data_info.*
+import okhttp3.*
+import java.io.IOException
+import android.os.AsyncTask.execute
+import org.json.JSONArray
+
 
 class DataInfo : AppCompatActivity(), OnMapReadyCallback {
 
@@ -26,12 +31,14 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var preference:SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_data_info)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         setSupportActionBar(infotoolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = intent.extras.getString("Name")
 
+        btn.setOnClickListener { sendComment() }
         toilet = intent.extras.getParcelable("toilet")
 
         preference = PreferenceManager.getDefaultSharedPreferences(this)
@@ -44,10 +51,13 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
             history+=", ${toilet.Number}"
         }
         else{
-            history=history.substring(history.indexOf(", "))+", ${toilet.Number}"
+            history=history.substring(history.indexOf(", ")+2)+", ${toilet.Number}"
         }
         preferEditor.putString("history",history)
         preferEditor.apply()
+
+        getStar()
+
         citytext.text = toilet.Country+toilet.City
         addrtext.text = toilet.Address
         owntext.text = toilet.Admin
@@ -100,6 +110,7 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
             sum+=i
         }
         if(sum==0) type2.visibility=View.VISIBLE
+
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -117,7 +128,10 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
                 return true
             }
             R.id.report_btn -> {
-                preference.edit().clear().apply()
+                var intent = Intent(this,AddItem::class.java)
+                intent.putExtra("status","report")
+                intent.putExtra("toilet",toilet)
+                startActivity(intent)
             }
         }
         return super.onOptionsItemSelected(item)
@@ -127,5 +141,44 @@ class DataInfo : AppCompatActivity(), OnMapReadyCallback {
 
         mMap.addMarker(MarkerOptions().position(toilet.getLatLng()).title(toilet.Name))
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(toilet.getLatLng(),18f))
+    }
+    fun sendComment(){
+        var httpClient = okhttp3.OkHttpClient()
+        if (rb.rating !=0.0f){
+            var request = Request.Builder().
+                    url("http://1c78066d.ngrok.io/pdo/insert_rating.php?number=${toilet.Number}&stars=${rb.rating}&comment=${editText2.text}").build()
+            httpClient.newCall(request).enqueue(object: Callback {
+                override fun onFailure(call: Call?, e: IOException?) {
+                    Log.d("Mytag", e.toString())
+                }
+                override fun onResponse(call: Call?, response: Response?) {
+                    Snackbar.make(findViewById(android.R.id.content),"發送成功",Snackbar.LENGTH_LONG).show()
+                }
+            })
+        }
+        else {
+            Snackbar.make(findViewById(android.R.id.content),"星等無法為空",Snackbar.LENGTH_LONG).show()
+        }
+    }
+    fun getStar(){
+        var httpClient = okhttp3.OkHttpClient()
+        var star=0
+        var request = Request.Builder().
+                url("http://1c78066d.ngrok.io/pdo/select_rating.php?number=${toilet.Number}").build()
+        httpClient.newCall(request).enqueue(object: Callback {
+            override fun onFailure(call: Call?, e: IOException?) {
+                Log.d("Mytag", e.toString())
+            }
+            override fun onResponse(call: Call?, response: Response?) {
+                val responseData = response?.body()?.string()
+                val json = JSONArray(responseData)
+                Log.d("mytag",json.length().toString())
+                for (i in 0..(json.length() - 1)) {
+                    val item = json.getJSONObject(i)
+                    star += item.get("stars").toString().toInt()
+                }
+                rb.rating = star.toFloat()
+            }
+        })
     }
 }

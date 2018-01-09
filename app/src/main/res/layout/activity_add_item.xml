@@ -8,7 +8,8 @@
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:theme="@style/AppTheme.AppBarOverlay">
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/infotoolbar"
@@ -36,8 +37,8 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="left|center"
+                android:layout_height="match_parent"
+                android:gravity="fill_vertical"
                 android:orientation="horizontal">
 
                 <LinearLayout
@@ -105,7 +106,7 @@
                     <EditText
                         android:id="@+id/itemname"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1"
                         android:hint="ex:輔仁大學"
                         android:inputType="text" />
@@ -113,13 +114,13 @@
                     <Spinner
                         android:id="@+id/typespinner"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1" />
 
                     <EditText
                         android:id="@+id/itemlocation"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1"
                         android:hint="ex:新北市新莊區"
                         android:inputType="text" />
@@ -127,22 +128,21 @@
                     <EditText
                         android:id="@+id/itemnaddr"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1"
                         android:hint="ex:新北市新莊區中正路 510 號"
                         android:inputType="text" />
 
-                    <EditText
-                        android:id="@+id/itemlat"
+                    <Spinner
+                        android:id="@+id/attrspinner"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:inputType="text" />
+                        android:layout_height="44dp"
+                        android:layout_weight="1" />
 
                     <EditText
                         android:id="@+id/legname"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1"
                         android:hint="ex:輔仁大學"
                         android:inputType="text" />

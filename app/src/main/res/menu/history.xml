@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".History">
+
+    <item
+        android:id="@+id/submitHistory"
+        android:checkable="false"
+        android:icon="@drawable/ic_receipt_black_24dp"
+        android:title="切換分類"
+        android:visible="true"
+        app:showAsAction="always|withText" />
+</menu>
