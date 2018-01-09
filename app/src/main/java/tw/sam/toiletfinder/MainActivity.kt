@@ -180,7 +180,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     getDataFromDB(currentCity)
                     placeMarker(mMap,toiletList,currentCity)
                 }
-
                 if(updatelist.size>0 && finishupdate){
                     snackbarshow("放置圖示中..")
                     placeMarker(mMap,updatelist,currentCity)
@@ -259,8 +258,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
             if(!getLocation.isEmpty()){
                 previousCity=currentCity
-                aa =getLocation[0].getAddressLine(0).indexOf("台灣")+5
-                currentCity=getLocation[0].getAddressLine(0).substring(aa..aa+2)
+                when (getLocation.size){
+                    1->currentCity=getLocation[0].locality
+                    5->currentCity=getLocation[5].locality
+                }
 
             }
 
@@ -296,11 +297,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     snackbarshow("地圖確認當前座標:"+mCurrentLocation.toString())
                     var aa= 0
                     try {
-                        var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,1)
+                        var getLocation=geocoder.getFromLocation(mCurrentLocation.latitude,mCurrentLocation.longitude,5)
                         if(!getLocation.isEmpty()){
-                            aa =getLocation[0].getAddressLine(0).indexOf("台灣")+5
-                            currentCity=getLocation[0].getAddressLine(0).substring(aa..aa+2)
-
+                            when (getLocation.size){
+                                1->currentCity=getLocation[0].locality
+                                5->currentCity=getLocation[4].locality
+                            }
                         }
 
                         snackbarshow(currentCity)
